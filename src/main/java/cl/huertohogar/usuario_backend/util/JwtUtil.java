@@ -2,8 +2,9 @@ package cl.huertohogar.usuario_backend.util;
 
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import cl.huertohogar.usuario_backend.config.JwtProperties;
 
 import java.util.Date;
 import javax.crypto.SecretKey;
@@ -11,23 +12,21 @@ import javax.crypto.SecretKey;
 @Component
 public class JwtUtil {
 
-    @Value("${jwt.secret:mySecretKeyForJwtTokenGenerationAndValidationPurposes123456789}")
-    private String secret;
-
-    @Value("${jwt.expiration:86400000}") // 24 horas en milisegundos
-    private Long expiration;
+    @Autowired
+    private JwtProperties jwtProperties;
 
     private SecretKey getSigningKey() {
-        return Keys.hmacShaKeyFor(secret.getBytes());
+        return Keys.hmacShaKeyFor(jwtProperties.getSecret().getBytes());
     }
 
-    public String generateToken(Integer usuarioId, String email) {
+    public String generateToken(Integer usuarioId, String email, String rol) {
         Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + expiration);
+        Date expiryDate = new Date(now.getTime() + jwtProperties.getExpiration());
 
         return Jwts.builder()
                 .subject(usuarioId.toString())
                 .claim("email", email)
+                .claim("rol", rol)
                 .issuedAt(now)
                 .expiration(expiryDate)
                 .signWith(getSigningKey())
@@ -54,6 +53,20 @@ public class JwtUtil {
                 .get("email", String.class);
     }
 
+    public String extractRol(String token) {
+        String rol = Jwts.parser()
+                .verifyWith(getSigningKey())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload()
+                .get("rol", String.class);
+        
+        // DEBUG: Imprimir el rol extraído
+        System.out.println("✅ ROL EXTRAÍDO DEL TOKEN: " + rol);
+        
+        return rol;
+    }
+
     public boolean isTokenValid(String token) {
         try {
             Jwts.parser()
@@ -62,6 +75,7 @@ public class JwtUtil {
                 .parseSignedClaims(token);
             return true;
         } catch (Exception e) {
+            System.out.println("❌ TOKEN INVÁLIDO: " + e.getMessage());
             return false;
         }
     }

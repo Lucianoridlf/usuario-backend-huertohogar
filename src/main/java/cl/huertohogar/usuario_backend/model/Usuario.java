@@ -60,4 +60,9 @@ public class Usuario {
     @JsonProperty("passwordHashed")
     @Schema(description = "Contraseña del usuario (sin hasher en entrada)")
     private String passwordHashed;
+
+    @Column(name = "rol", nullable = false)
+    @Schema(description = "Rol del usuario")
+    private String rol;
+
 }

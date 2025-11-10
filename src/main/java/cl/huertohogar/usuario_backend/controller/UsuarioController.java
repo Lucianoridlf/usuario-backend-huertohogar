@@ -17,6 +17,7 @@ import cl.huertohogar.usuario_backend.exception.AuthenticationFailedException;
 import cl.huertohogar.usuario_backend.exception.UsuarioNotFoundException;
 import cl.huertohogar.usuario_backend.model.Usuario;
 import cl.huertohogar.usuario_backend.service.UsuarioService;
+import cl.huertohogar.usuario_backend.config.RequireRole;
 import cl.huertohogar.usuario_backend.util.JwtUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -68,6 +69,7 @@ public class UsuarioController {
             )
         )
     })
+
     @PostMapping("")
     public ResponseEntity<Usuario> createUsuario(
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
@@ -104,6 +106,7 @@ public class UsuarioController {
             )
         )
     })
+    @RequireRole({"USER", "ADMIN"})
     @GetMapping("")
     public ResponseEntity<List<Usuario>> getUsuarios() {
         return ResponseEntity.ok(usuarioService.findAll());
@@ -127,6 +130,7 @@ public class UsuarioController {
             )
         )
     })
+    @RequireRole({"USER", "ADMIN"})
     @GetMapping("/{id}")
     public ResponseEntity<Usuario> getUsuarioById(
             @Parameter(description = "ID del usuario a buscar", example = "1")
@@ -151,6 +155,7 @@ public class UsuarioController {
             content = @Content(mediaType = "application/json")
         )
     })
+    @RequireRole({"USER", "ADMIN"})
     @PutMapping("/{id}")
     public ResponseEntity<Usuario> updateUsuario(
             @Parameter(description = "ID del usuario a actualizar", example = "1")
@@ -178,6 +183,7 @@ public class UsuarioController {
         @ApiResponse(responseCode = "404", description = "Usuario no encontrado"),
         @ApiResponse(responseCode = "400", description = "Datos inválidos")
     })
+    @RequireRole({"USER", "ADMIN"})
     @PatchMapping("/{id}")
     public ResponseEntity<Usuario> partialUpdateUsuario(
             @Parameter(description = "ID del Usuario", example = "1")
@@ -208,6 +214,7 @@ public class UsuarioController {
             content = @Content(mediaType = "application/json")
         )
     })
+    @RequireRole({"ADMIN"})
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteUsuario(
             @Parameter(description = "ID del usuario a eliminar", example = "1")
@@ -228,6 +235,7 @@ public class UsuarioController {
             content = @Content(mediaType = "application/json")
         )
     })
+    @RequireRole({"USER", "ADMIN"})
     @GetMapping("/categoria/{id}")
     public ResponseEntity<List<Usuario>> getProductosPorCategoria(
             @Parameter(description = "ID de la categoría", example = "1")
@@ -254,14 +262,15 @@ public class UsuarioController {
             @org.springframework.web.bind.annotation.RequestBody AuthenticationRequest request) {
         try {
             Usuario usuario = usuarioService.authenticateByEmailOrThrow(request.getEmail(), request.getPassword());
-            String token = jwtUtil.generateToken(usuario.getIdUsuario(), usuario.getEmail());
+            String token = jwtUtil.generateToken(usuario.getIdUsuario(), usuario.getEmail(),usuario.getRol());
             
             AuthenticationResponse response = new AuthenticationResponse(
                 token,
                 usuario.getIdUsuario(),
                 usuario.getEmail(),
                 usuario.getPNombre(),
-                usuario.getAPaterno()
+                usuario.getAPaterno(),
+                usuario.getRol()
             );
             return ResponseEntity.ok(response);
         } catch (AuthenticationFailedException e) {
@@ -295,6 +304,7 @@ public class UsuarioController {
             content = @Content(mediaType = "application/json")
         )
     })
+    @RequireRole({"USER", "ADMIN"})
     @PutMapping("/{id}/cambiar-contrasena")
     public ResponseEntity<String> changePassword(
             @Parameter(description = "ID del usuario", example = "1")
@@ -323,6 +333,7 @@ public class UsuarioController {
         @ApiResponse(responseCode = "404", description = "Usuario no encontrado"),
         @ApiResponse(responseCode = "400", description = "Nueva contraseña inválida")
     })
+    @RequireRole({"ADMIN"})
     @PatchMapping("/{id}/resetear-contrasena")
     public ResponseEntity<String> resetPassword(
             @Parameter(description = "ID del usuario", example = "1")
