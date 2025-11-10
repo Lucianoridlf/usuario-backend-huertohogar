@@ -18,22 +18,22 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "ciudad")
-@Schema(description = "Entidad que representa una ciudad")
+@Schema(description = "Entidad que representa una ciudad asociada a una región")
 public class Ciudad {
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_ciudad", nullable = false)
-    @Schema(description = "Identificador único de la ciudad")
+    @Schema(description = "Identificador único de la ciudad", example = "1", accessMode = Schema.AccessMode.READ_ONLY)
     private Integer idCiudad;
 
-    @Column(name = "nombre_ciudad", nullable = false)
-    @Schema(description = "Nombre de la ciudad")
+    @Column(name = "nombre_ciudad", nullable = false, unique = true)
+    @Schema(description = "Nombre de la ciudad", example = "Santiago", required = true, minLength = 2, maxLength = 100)
     private String nombreCiudad;
 
     @ManyToOne
     @JoinColumn(name = "id_region", nullable = false)
-    @Schema(description = "Región a la que pertenece la ciudad")
+    @Schema(description = "Región a la que pertenece la ciudad", required = true, implementation = Region.class)
     private Region region;
 
 }

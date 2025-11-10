@@ -27,6 +27,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -90,7 +91,8 @@ public class UsuarioController {
 
     @Operation(
         summary = "Listar todos los usuarios",
-        description = "Obtiene la lista completa de usuarios registrados en el sistema"
+        description = "Obtiene la lista completa de usuarios registrados en el sistema",
+        security = @SecurityRequirement(name = "bearerAuth")
     )
     @ApiResponses(value = {
         @ApiResponse(
@@ -104,6 +106,11 @@ public class UsuarioController {
                 mediaType = "application/json",
                 examples = @ExampleObject(value = "{\"timestamp\":\"2025-11-01T10:30:00\",\"message\":\"No se encontraron usuarios\",\"status\":404}")
             )
+        ),
+        @ApiResponse(
+            responseCode = "401",
+            description = "No autorizado - Token JWT inválido o ausente",
+            content = @Content(mediaType = "application/json")
         )
     })
     @RequireRole({"USER", "ADMIN"})

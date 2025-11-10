@@ -25,6 +25,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 
 @RestController
 @RequestMapping("/api/v1/ciudades")
@@ -36,7 +37,8 @@ public class CiudadController {
 
     @Operation(
         summary = "Crear una nueva ciudad",
-        description = "Crea una nueva ciudad en el sistema con su nombre y región asociada."
+        description = "Crea una nueva ciudad en el sistema con su nombre y región asociada.",
+        security = @SecurityRequirement(name = "bearerAuth")
     )
     @ApiResponses(value = {
         @ApiResponse(

@@ -17,17 +17,17 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "region")
-@Schema(description = "Entidad que representa una región")
+@Schema(description = "Entidad que representa una región geográfica del país")
 public class Region {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_region", nullable = false)
-    @Schema(description = "Identificador único de la región")
+    @Schema(description = "Identificador único de la región", example = "1", accessMode = Schema.AccessMode.READ_ONLY)
     private Integer idRegion;
 
-    @Column(name = "nombre_region", nullable = false)
-    @Schema(description = "Nombre de la región")
+    @Column(name = "nombre_region", nullable = false, unique = true)
+    @Schema(description = "Nombre de la región", example = "Región Metropolitana", required = true, minLength = 3, maxLength = 100)
     private String nombreRegion;
 
 }

@@ -26,6 +26,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 
 @RestController
 @RequestMapping("/api/v1/regiones")
@@ -37,7 +38,8 @@ public class RegionController {
 
     @Operation(
         summary = "Crear una nueva región",
-        description = "Crea una nueva región en el sistema con un nombre único."
+        description = "Crea una nueva región en el sistema con un nombre único.",
+        security = @SecurityRequirement(name = "bearerAuth")
     )
     @ApiResponses(value = {
         @ApiResponse(
