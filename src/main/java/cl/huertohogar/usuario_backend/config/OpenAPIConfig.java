@@ -40,7 +40,7 @@ public class OpenAPIConfig {
                     .name("Apache 2.0")
                     .url("https://www.apache.org/licenses/LICENSE-2.0.html")))
             .addServersItem(new Server()
-                .url("https://hh-usuario-backend-n6qwg.ondigitalocean.app")
+                .url("https://hh-usuario-backend-efp2p.ondigitalocean.app/")
                 .description("Servidor Producción - DigitalOcean"))
             .addServersItem(new Server()
                 .url("http://localhost:8080")
