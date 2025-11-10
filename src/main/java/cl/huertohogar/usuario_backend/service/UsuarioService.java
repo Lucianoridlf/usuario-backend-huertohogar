@@ -1,10 +1,13 @@
 package cl.huertohogar.usuario_backend.service;
 
 import java.util.List;
+import java.util.regex.Pattern;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import cl.huertohogar.usuario_backend.exception.AuthenticationFailedException;
 import cl.huertohogar.usuario_backend.exception.UsuarioNotFoundException;
 import cl.huertohogar.usuario_backend.exception.UsuarioNotValidException;
 import cl.huertohogar.usuario_backend.model.Usuario;
@@ -14,8 +17,18 @@ import jakarta.transaction.Transactional;
 @Service
 @Transactional
 public class UsuarioService {
+    
     @Autowired
     private UsuarioRepository usuarioRepository;
+    
+    // BCrypt encoder para cifrado de contraseñas
+    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+    
+    // Patrón para validar contraseñas seguras
+    // Mínimo 8 caracteres, al menos una mayúscula, una minúscula, un número y un carácter especial
+    private static final Pattern PASSWORD_PATTERN = Pattern.compile(
+        "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$"
+    );
 
  // CREATE - Crear un nuevo usuario
     public Usuario save(Usuario usuario) {
@@ -37,9 +50,23 @@ public class UsuarioService {
         if (usuario.getEmail() == null || usuario.getEmail().trim().isEmpty()) {
             throw new UsuarioNotValidException("El email del usuario es obligatorio");
         }
-        if (usuario.getPassword() == null || usuario.getPassword().toString().trim().isEmpty()) {
+        if (usuario.getPasswordHashed() == null || usuario.getPasswordHashed().trim().isEmpty()) {
             throw new UsuarioNotValidException("La contraseña del usuario es obligatoria");
         }
+
+        
+        
+        // Validar formato de contraseña segura
+        if (!isValidPassword(usuario.getPasswordHashed())) {
+            throw new UsuarioNotValidException(
+                "La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial (@$!%*?&)"
+            );
+        }
+        
+        // Hashear la contraseña antes de guardarla
+        String hashedPassword = passwordEncoder.encode(usuario.getPasswordHashed());
+        usuario.setPasswordHashed(hashedPassword);
+        
         return usuarioRepository.save(usuario);
     }
 
@@ -75,7 +102,7 @@ public class UsuarioService {
         if (usuarioActualizado.getAMaterno() == null || usuarioActualizado.getAMaterno().trim().isEmpty()) {
             throw new UsuarioNotValidException("El apellido materno del usuario es obligatorio");
         }
-        if (usuarioActualizado.getPassword() == null || usuarioActualizado.getPassword().toString().trim().isEmpty()) {
+        if (usuarioActualizado.getPasswordHashed() == null || usuarioActualizado.getPasswordHashed().trim().isEmpty()) {
             throw new UsuarioNotValidException("La contraseña del usuario es obligatoria");
         }
         
@@ -85,7 +112,7 @@ public class UsuarioService {
         usuarioExistente.setAPaterno(usuarioActualizado.getAPaterno());
         usuarioExistente.setAMaterno(usuarioActualizado.getAMaterno());
         usuarioExistente.setEmail(usuarioActualizado.getEmail());
-        usuarioExistente.setPassword(usuarioActualizado.getPassword());
+        usuarioExistente.setPasswordHashed(usuarioActualizado.getPasswordHashed());
 
         return usuarioRepository.save(usuarioExistente);
     }
@@ -121,8 +148,8 @@ public class UsuarioService {
             usuarioExistente.setEmail(usuarioActualizado.getEmail());
         }
 
-        if (usuarioActualizado.getPassword() != null) {
-            usuarioExistente.setPassword(usuarioActualizado.getPassword());
+        if (usuarioActualizado.getPasswordHashed() != null) {
+            usuarioExistente.setPasswordHashed(usuarioActualizado.getPasswordHashed());
         }
 
         return usuarioRepository.save(usuarioExistente);
@@ -152,6 +179,111 @@ public class UsuarioService {
             throw new UsuarioNotFoundException("No se encontraron usuarios con apellido paterno id: " + idAPaterno);
         }
         return usuarios;
+    }
 
-}
+    // AUTENTICACIÓN - Verificar si la contraseña es correcta (para login)
+    public boolean authenticate(Integer idUsuario, String plainPassword) {
+        try {
+            Usuario usuario = findById(idUsuario);
+            return verifyPassword(plainPassword, usuario.getPasswordHashed());
+        } catch (UsuarioNotFoundException e) {
+            return false;
+        }
+    }
+
+    // AUTENTICACIÓN - Verificar contraseña con manejo de excepciones
+    public void authenticateOrThrow(Integer idUsuario, String plainPassword) {
+        if (!authenticate(idUsuario, plainPassword)) {
+            throw new AuthenticationFailedException("Credenciales inválidas");
+        }
+    }
+
+    // VALIDACIÓN - Verificar si una contraseña cumple con los requisitos de seguridad
+    public boolean isValidPassword(String password) {
+        if (password == null || password.isEmpty()) {
+            return false;
+        }
+        return PASSWORD_PATTERN.matcher(password).matches();
+    }
+
+    // UTILIDAD - Verificar si una contraseña en texto plano coincide con el hash
+    private boolean verifyPassword(String plainPassword, String hashedPassword) {
+        return passwordEncoder.matches(plainPassword, hashedPassword);
+    }
+
+    // UTILIDAD - Obtener la fortaleza de la contraseña
+    public String getPasswordStrength(String password) {
+        if (password == null || password.length() < 8) {
+            return "DÉBIL";
+        }
+        
+        int strength = 0;
+        if (password.matches(".*[a-z].*")) strength++;
+        if (password.matches(".*[A-Z].*")) strength++;
+        if (password.matches(".*\\d.*")) strength++;
+        if (password.matches(".*[@$!%*?&].*")) strength++;
+        
+        if (strength >= 4 && password.length() >= 12) {
+            return "MUY FUERTE";
+        } else if (strength >= 4) {
+            return "FUERTE";
+        } else if (strength >= 3) {
+            return "MODERADA";
+        } else {
+            return "DÉBIL";
+        }
+    }
+
+    // CAMBIAR CONTRASEÑA - Cambiar contraseña verificando la anterior
+    public Usuario changePassword(Integer idUsuario, String oldPassword, String newPassword) {
+        Usuario usuario = findById(idUsuario);
+        
+        // Validar contraseña anterior
+        if (!verifyPassword(oldPassword, usuario.getPasswordHashed())) {
+            throw new AuthenticationFailedException("La contraseña anterior no es correcta");
+        }
+        
+        // Validar nueva contraseña
+        if (newPassword == null || newPassword.trim().isEmpty()) {
+            throw new UsuarioNotValidException("La nueva contraseña es obligatoria");
+        }
+        
+        if (!isValidPassword(newPassword)) {
+            throw new UsuarioNotValidException(
+                "La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial (@$!%*?&)"
+            );
+        }
+        
+        // No permitir que la nueva contraseña sea igual a la anterior
+        if (verifyPassword(newPassword, usuario.getPasswordHashed())) {
+            throw new UsuarioNotValidException("La nueva contraseña no puede ser igual a la anterior");
+        }
+        
+        // Cifrar y actualizar
+        String hashedPassword = passwordEncoder.encode(newPassword);
+        usuario.setPasswordHashed(hashedPassword);
+        
+        return usuarioRepository.save(usuario);
+    }
+
+    // RESET CONTRASEÑA - Resetear contraseña sin validar la anterior (solo para admin)
+    public Usuario resetPassword(Integer idUsuario, String newPassword) {
+        Usuario usuario = findById(idUsuario);
+        
+        if (newPassword == null || newPassword.trim().isEmpty()) {
+            throw new UsuarioNotValidException("La nueva contraseña es obligatoria");
+        }
+        
+        if (!isValidPassword(newPassword)) {
+            throw new UsuarioNotValidException(
+                "La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial (@$!%*?&)"
+            );
+        }
+        
+        // Cifrar y actualizar
+        String hashedPassword = passwordEncoder.encode(newPassword);
+        usuario.setPasswordHashed(hashedPassword);
+        
+        return usuarioRepository.save(usuario);
+    }
 }

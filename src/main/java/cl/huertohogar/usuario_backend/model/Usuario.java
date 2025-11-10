@@ -1,13 +1,12 @@
 package cl.huertohogar.usuario_backend.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OneToOne;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -26,18 +25,22 @@ public class Usuario {
     private Integer idUsuario;
     
     @Column(name = "pnombre", nullable = false)
+    @JsonProperty("pNombre")
     @Schema(description = "Primer nombre del usuario")
     private String pNombre;
     
     @Column(name = "snombre", nullable = false)
+    @JsonProperty("sNombre")
     @Schema(description = "Segundo nombre del usuario")
     private String sNombre;
 
-    @Column(name= "apaterno", nullable = false)
+    @Column(name = "apaterno", nullable = false)
+    @JsonProperty("aPaterno")
     @Schema(description = "Apellido paterno del usuario")
     private String aPaterno;
 
-    @Column(name= "amaterno", nullable = false)
+    @Column(name = "amaterno", nullable = false)
+    @JsonProperty("aMaterno")
     @Schema(description = "Apellido materno del usuario")
     private String aMaterno;
 
@@ -53,8 +56,8 @@ public class Usuario {
     @Schema(description = "Dirección del usuario")
     private String direccion;
 
-    @OneToOne
-    @JoinColumn(name = "id_password", nullable = false)
-    @Schema(description = "Contraseña asociada al usuario")
-    private Password password;  
+    @Column(name = "password_hashed", nullable = false)
+    @JsonProperty("passwordHashed")
+    @Schema(description = "Contraseña del usuario (sin hasher en entrada)")
+    private String passwordHashed;
 }

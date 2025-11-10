@@ -8,6 +8,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import cl.huertohogar.usuario_backend.dto.AuthenticationRequest;
+import cl.huertohogar.usuario_backend.dto.PasswordUpdateRequest;
+import cl.huertohogar.usuario_backend.dto.PasswordResetRequest;
+import cl.huertohogar.usuario_backend.dto.PasswordValidationRequest;
 import cl.huertohogar.usuario_backend.model.Usuario;
 import cl.huertohogar.usuario_backend.service.UsuarioService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -15,7 +19,6 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -26,7 +29,6 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 
 
 @RestController
@@ -226,8 +228,132 @@ public class UsuarioController {
         return ResponseEntity.ok(usuarioService.findByAPaterno(id));
     }
 
-    
+    // ==================== ENDPOINTS DE AUTENTICACIÓN Y CONTRASEÑA ====================
 
-    
+    @Operation(
+        summary = "Autenticar usuario",
+        description = "Valida las credenciales de un usuario verificando su contraseña"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Autenticación exitosa"),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Credenciales inválidas",
+            content = @Content(mediaType = "application/json")
+        )
+    })
+    @PostMapping("/authenticate")
+    public ResponseEntity<String> authenticate(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                description = "Credenciales del usuario",
+                required = true,
+                content = @Content(
+                    schema = @Schema(implementation = AuthenticationRequest.class),
+                    examples = @ExampleObject(
+                        value = "{\"idUsuario\":1,\"password\":\"MiPassword123!\"}"
+                    )
+                )
+            )
+            @org.springframework.web.bind.annotation.RequestBody AuthenticationRequest request) {
+        boolean isAuthenticated = usuarioService.authenticate(request.getIdUsuario(), request.getPassword());
+        if (isAuthenticated) {
+            return ResponseEntity.ok("Autenticación exitosa");
+        }
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Credenciales inválidas");
+    }
+
+    @Operation(
+        summary = "Cambiar contraseña",
+        description = "Cambia la contraseña de un usuario. Requiere la contraseña anterior para validación."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Contraseña cambiada exitosamente"),
+        @ApiResponse(
+            responseCode = "404",
+            description = "Usuario no encontrado",
+            content = @Content(mediaType = "application/json")
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Datos inválidos o contraseña anterior incorrecta",
+            content = @Content(mediaType = "application/json")
+        ),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Contraseña anterior incorrecta",
+            content = @Content(mediaType = "application/json")
+        )
+    })
+    @PutMapping("/{id}/cambiar-contrasena")
+    public ResponseEntity<String> changePassword(
+            @Parameter(description = "ID del usuario", example = "1")
+            @PathVariable Integer id,
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                description = "Contraseñas antigua y nueva",
+                required = true,
+                content = @Content(
+                    schema = @Schema(implementation = PasswordUpdateRequest.class),
+                    examples = @ExampleObject(
+                        value = "{\"oldPassword\":\"OldPassword123!\",\"newPassword\":\"NewPassword456!\"}"
+                    )
+                )
+            )
+            @org.springframework.web.bind.annotation.RequestBody PasswordUpdateRequest request) {
+        usuarioService.changePassword(id, request.getOldPassword(), request.getNewPassword());
+        return ResponseEntity.ok("Contraseña cambiada exitosamente");
+    }
+
+    @Operation(
+        summary = "Resetear contraseña",
+        description = "Resetea la contraseña sin validar la anterior (solo para administradores)"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Contraseña reseteada exitosamente"),
+        @ApiResponse(responseCode = "404", description = "Usuario no encontrado"),
+        @ApiResponse(responseCode = "400", description = "Nueva contraseña inválida")
+    })
+    @PatchMapping("/{id}/resetear-contrasena")
+    public ResponseEntity<String> resetPassword(
+            @Parameter(description = "ID del usuario", example = "1")
+            @PathVariable Integer id,
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                description = "Nueva contraseña",
+                required = true,
+                content = @Content(
+                    schema = @Schema(implementation = PasswordResetRequest.class),
+                    examples = @ExampleObject(
+                        value = "{\"newPassword\":\"ResetPassword123!\"}"
+                    )
+                )
+            )
+            @org.springframework.web.bind.annotation.RequestBody PasswordResetRequest request) {
+        usuarioService.resetPassword(id, request.getNewPassword());
+        return ResponseEntity.ok("Contraseña reseteada exitosamente");
+    }
+
+    @Operation(
+        summary = "Validar formato de contraseña",
+        description = "Verifica si una contraseña cumple con los requisitos de seguridad"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Validación completada")
+    })
+    @PostMapping("/validar-contrasena")
+    public ResponseEntity<String> validatePassword(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                description = "Contraseña a validar",
+                required = true,
+                content = @Content(
+                    schema = @Schema(implementation = PasswordValidationRequest.class),
+                    examples = @ExampleObject(
+                        value = "{\"password\":\"TestPassword123!\"}"
+                    )
+                )
+            )
+            @org.springframework.web.bind.annotation.RequestBody PasswordValidationRequest request) {
+        boolean isValid = usuarioService.isValidPassword(request.getPassword());
+        String strength = usuarioService.getPasswordStrength(request.getPassword());
+        return ResponseEntity.ok("Válida: " + isValid + ", Fortaleza: " + strength);
+    }
 
 }
