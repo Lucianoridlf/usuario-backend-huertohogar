@@ -26,6 +26,10 @@ public class OpenAPIConfig {
                             "Incluye endpoints protegidos con control de acceso basado en roles (RBAC). " +
                             "\n\n**Roles disponibles:** USER, ADMIN" +
                             "\n\n**Autenticación:** JWT Bearer Token" +
+                            "\n\n**Seguridad de Roles:**" +
+                            "\n- Nuevos usuarios siempre se crean con rol USER" +
+                            "\n- Solo ADMIN puede promover usuarios a ADMIN" +
+                            "\n- El primer ADMIN debe crearse directamente en la base de datos" +
                             "\n\n**Para usar endpoints protegidos:**" +
                             "\n1. Autentícate en POST /api/v1/usuarios/authenticate" +
                             "\n2. Copia el token JWT recibido" +

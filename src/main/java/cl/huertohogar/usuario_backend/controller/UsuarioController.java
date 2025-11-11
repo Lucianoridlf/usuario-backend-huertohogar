@@ -79,8 +79,8 @@ public class UsuarioController {
                 content = @Content(
                     schema = @Schema(implementation = Usuario.class),
                     examples = @ExampleObject(
-                        name = "Ejemplo de producto",
-                        value = "{\"idUsuario\":0,\"primerNombre\":\"Luis\",\"segundoNombre\":\"Andrés\",\"primerApellido\":\"González\",\"segundoApellido\":\"Ramírez\",\"email\":\"luisgonzalez@gmail.com\",\"telefono\":\"+56987654321\",\"direccion\":\"Calle Prueba 123\",\"password\":{\"idPassword\":0,\"valorPassword\":\"MiPassword123!\"}}"
+                        name = "Ejemplo de usuario",
+                        value = "{\"pNombre\":\"Luis\",\"sNombre\":\"Andrés\",\"aPaterno\":\"González\",\"aMaterno\":\"Ramírez\",\"email\":\"luisgonzalez@gmail.com\",\"telefono\":\"+56987654321\",\"direccion\":\"Calle Prueba 123\",\"passwordHashed\":\"MiPassword123!\"}"
                     )
                 )
             )
@@ -172,7 +172,7 @@ public class UsuarioController {
                 content = @Content(
                     schema = @Schema(implementation = Usuario.class),
                     examples = @ExampleObject(
-                        value = "{\"idUsuario\":1,\"primerNombre\":\"Luis\",\"segundoNombre\":\"Andrés\",\"primerApellido\":\"González\",\"segundoApellido\":\"Ramírez\",\"email\":\"luisgonzalez@gmail.com\",\"telefono\":\"+56987654321\",\"direccion\":\"Calle Prueba 123\",\"password\":{\"idPassword\":1,\"valorPassword\":\"MiPassword123!\"}}"
+                        value = "{\"pNombre\":\"Luis\",\"sNombre\":\"Andrés\",\"aPaterno\":\"González\",\"aMaterno\":\"Ramírez\",\"email\":\"luisgonzalez@gmail.com\",\"telefono\":\"+56987654321\",\"direccion\":\"Av. Libertador 456\",\"passwordHashed\":\"NuevaPassword123!\"}"
                     )
                 )
             )
@@ -385,4 +385,41 @@ public class UsuarioController {
         return ResponseEntity.ok("Válida: " + isValid + ", Fortaleza: " + strength);
     }
 
+    @Operation(summary = "Promover usuario a ADMIN (solo ADMIN)")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Usuario promovido exitosamente"),
+        @ApiResponse(responseCode = "401", description = "No autorizado"),
+        @ApiResponse(responseCode = "403", description = "Prohibido - Solo ADMIN puede promover"),
+        @ApiResponse(responseCode = "404", description = "Usuario no encontrado")
+    })
+    @PatchMapping("/{id}/promover-admin")
+    @RequireRole("ADMIN")
+    @SecurityRequirement(name = "bearerAuth")
+    public ResponseEntity<Usuario> promoverAAdmin(@PathVariable Integer id) {
+        try {
+            Usuario usuarioActualizado = usuarioService.promoverAAdmin(id);  // ✅ Usa el service
+            return ResponseEntity.ok(usuarioActualizado);
+        } catch (UsuarioNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @Operation(summary = "Degradar ADMIN a USER (solo ADMIN)")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Usuario degradado exitosamente"),
+        @ApiResponse(responseCode = "401", description = "No autorizado"),
+        @ApiResponse(responseCode = "403", description = "Prohibido - Solo ADMIN"),
+        @ApiResponse(responseCode = "404", description = "Usuario no encontrado")
+    })
+    @PatchMapping("/{id}/degradar-user")
+    @RequireRole("ADMIN")
+    @SecurityRequirement(name = "bearerAuth")
+    public ResponseEntity<Usuario> degradarAUser(@PathVariable Integer id) {
+        try {
+            Usuario usuarioActualizado = usuarioService.degradarAUser(id);  // ✅ Usa el service
+            return ResponseEntity.ok(usuarioActualizado);
+        } catch (UsuarioNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
 }

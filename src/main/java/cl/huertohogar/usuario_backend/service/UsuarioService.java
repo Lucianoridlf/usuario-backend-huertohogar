@@ -55,6 +55,8 @@ public class UsuarioService {
         }
 
         
+        // ✅ SEGURIDAD: Forzar rol USER siempre en creación
+        usuario.setRol("USER");
         
         // Validar formato de contraseña segura
         if (!isValidPassword(usuario.getPasswordHashed())) {
@@ -304,5 +306,17 @@ public class UsuarioService {
         usuario.setPasswordHashed(hashedPassword);
         
         return usuarioRepository.save(usuario);
+    }
+
+    public Usuario promoverAAdmin(Integer id) {
+        Usuario usuario = findById(id);
+        usuario.setRol("ADMIN");
+        return usuarioRepository.save(usuario);  // ✅ Usa directamente el repo sin validaciones de creación
+    }
+
+    public Usuario degradarAUser(Integer id) {
+        Usuario usuario = findById(id);
+        usuario.setRol("USER");
+        return usuarioRepository.save(usuario);  // ✅ Usa directamente el repo
     }
 }

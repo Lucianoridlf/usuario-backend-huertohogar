@@ -62,7 +62,8 @@ public class Usuario {
     private String passwordHashed;
 
     @Column(name = "rol", nullable = false)
-    @Schema(description = "Rol del usuario en el sistema", example = "USER", required = true, allowableValues = {"USER", "ADMIN"}, defaultValue = "USER")
-    private String rol;
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)  // ✅ Solo lectura, no se puede enviar en POST
+    @Schema(description = "Rol del usuario: USER, ADMIN", example = "USER", accessMode = Schema.AccessMode.READ_ONLY)
+    private String rol = "USER"; // ✅ Por defecto siempre USER
 
 }
