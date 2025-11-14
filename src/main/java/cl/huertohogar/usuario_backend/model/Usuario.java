@@ -8,62 +8,198 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import lombok.AllArgsConstructor;
-import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@Data
+import java.time.LocalDate;
+
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(description = "Entidad que representa un usuario del sistema con autenticación y roles")
+@Schema(description = "Entidad que representa un usuario")
 public class Usuario {
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_usuario", nullable = false)
-    @Schema(description = "Identificador único del usuario", example = "1", accessMode = Schema.AccessMode.READ_ONLY)
+    @Schema(description = "Identificador único del usuario", accessMode = Schema.AccessMode.READ_ONLY)
     private Integer idUsuario;
     
-    @Column(name = "pnombre", nullable = false)
-    @JsonProperty("pNombre")
-    @Schema(description = "Primer nombre del usuario", example = "Luis", required = true, minLength = 2, maxLength = 50)
-    private String pNombre;
+    @Column(name = "nombre", nullable = false)
+    @Schema(description = "Nombre del usuario", example = "Luis")
+    private String nombre;
     
-    @Column(name = "snombre", nullable = false)
-    @JsonProperty("sNombre")
-    @Schema(description = "Segundo nombre del usuario", example = "Andrés", required = true, minLength = 2, maxLength = 50)
+    @Column(name = "snombre", nullable = true)
+    @Schema(description = "Segundo nombre del usuario (opcional)", example = "Andrés")
     private String sNombre;
 
     @Column(name = "apaterno", nullable = false)
-    @JsonProperty("aPaterno")
-    @Schema(description = "Apellido paterno del usuario", example = "González", required = true, minLength = 2, maxLength = 50)
+    @Schema(description = "Apellido paterno del usuario", example = "González")
     private String aPaterno;
 
     @Column(name = "amaterno", nullable = false)
-    @JsonProperty("aMaterno")
-    @Schema(description = "Apellido materno del usuario", example = "Ramírez", required = true, minLength = 2, maxLength = 50)
+    @Schema(description = "Apellido materno del usuario", example = "Ramírez")
     private String aMaterno;
 
-    @Column(name = "email", nullable = false, unique = true)
-    @Schema(description = "Correo electrónico del usuario (único)", example = "luis.gonzalez@example.com", required = true, format = "email")
-    private String email;
+    @Column(name = "rut", nullable = false, unique = true, length = 8)
+    @Schema(description = "RUT del usuario sin puntos ni guión", example = "12345678")
+    private String rut;
 
-    @Column(name = "telefono", nullable = false)
-    @Schema(description = "Número de teléfono del usuario", example = "+56987654321", required = true, pattern = "^\\+?[0-9]{8,15}$")
-    private String telefono;
+    @Column(name = "dv", nullable = false, length = 1)
+    @Schema(description = "Dígito verificador del RUT", example = "9")
+    private String dv;
+
+    @Column(name = "fecha_nacimiento", nullable = false)
+    @Schema(description = "Fecha de nacimiento del usuario", example = "1990-05-15")
+    private LocalDate fechaNacimiento;
+
+    @Column(name = "id_region", nullable = false)
+    @Schema(description = "ID de la región (llave foránea)", example = "13")
+    private Integer idRegion;
 
     @Column(name = "direccion", nullable = false)
-    @Schema(description = "Dirección del usuario", example = "Av. Libertador Bernardo O'Higgins 123, Santiago", required = true, maxLength = 200)
+    @Schema(description = "Dirección del usuario", example = "Av. Libertador 123, Santiago")
     private String direccion;
 
+    @Column(name = "email", nullable = false, unique = true)
+    @Schema(description = "Correo electrónico del usuario", example = "luisgonzalez@gmail.com")
+    private String email;
+
+    @Column(name = "telefono", nullable = true)
+    @Schema(description = "Número de teléfono del usuario (opcional)", example = "+56987654321")
+    private String telefono;
+
     @Column(name = "password_hashed", nullable = false)
-    @JsonProperty("passwordHashed")
-    @Schema(description = "Contraseña del usuario (se hashea automáticamente con BCrypt)", example = "MiPassword123!", required = true, minLength = 8, accessMode = Schema.AccessMode.WRITE_ONLY)
+    @Schema(description = "Contraseña del usuario", example = "MiPassword123!", accessMode = Schema.AccessMode.WRITE_ONLY)
     private String passwordHashed;
 
     @Column(name = "rol", nullable = false)
-    @JsonProperty(access = JsonProperty.Access.READ_ONLY)  // ✅ Solo lectura, no se puede enviar en POST
     @Schema(description = "Rol del usuario: USER, ADMIN", example = "USER", accessMode = Schema.AccessMode.READ_ONLY)
-    private String rol = "USER"; // ✅ Por defecto siempre USER
+    private String rol = "USER";
 
+    // Getters y Setters con @JsonProperty para mapeo correcto
+    
+    public Integer getIdUsuario() {
+        return idUsuario;
+    }
+
+    public void setIdUsuario(Integer idUsuario) {
+        this.idUsuario = idUsuario;
+    }
+
+    @JsonProperty("nombre")
+    public String getNombre() {
+        return nombre;
+    }
+
+    public void setNombre(String nombre) {
+        this.nombre = nombre;
+    }
+
+    @JsonProperty("sNombre")
+    public String getSNombre() {
+        return sNombre;
+    }
+
+    public void setSNombre(String sNombre) {
+        this.sNombre = sNombre;
+    }
+
+    @JsonProperty("aPaterno")  // ✅ Mapea "aPaterno" del JSON a este getter
+    public String getAPaterno() {
+        return aPaterno;
+    }
+
+    public void setAPaterno(String aPaterno) {
+        this.aPaterno = aPaterno;
+    }
+
+    @JsonProperty("aMaterno")  // ✅ Mapea "aMaterno" del JSON a este getter
+    public String getAMaterno() {
+        return aMaterno;
+    }
+
+    public void setAMaterno(String aMaterno) {
+        this.aMaterno = aMaterno;
+    }
+
+    @JsonProperty("rut")
+    public String getRut() {
+        return rut;
+    }
+
+    public void setRut(String rut) {
+        this.rut = rut;
+    }
+
+    @JsonProperty("dv")
+    public String getDv() {
+        return dv;
+    }
+
+    public void setDv(String dv) {
+        this.dv = dv;
+    }
+
+    @JsonProperty("fechaNacimiento")
+    public LocalDate getFechaNacimiento() {
+        return fechaNacimiento;
+    }
+
+    public void setFechaNacimiento(LocalDate fechaNacimiento) {
+        this.fechaNacimiento = fechaNacimiento;
+    }
+
+    @JsonProperty("idRegion")
+    public Integer getIdRegion() {
+        return idRegion;
+    }
+
+    public void setIdRegion(Integer idRegion) {
+        this.idRegion = idRegion;
+    }
+
+    @JsonProperty("direccion")
+    public String getDireccion() {
+        return direccion;
+    }
+
+    public void setDireccion(String direccion) {
+        this.direccion = direccion;
+    }
+
+    @JsonProperty("email")
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    @JsonProperty("telefono")
+    public String getTelefono() {
+        return telefono;
+    }
+
+    public void setTelefono(String telefono) {
+        this.telefono = telefono;
+    }
+
+    @JsonProperty(value = "passwordHashed", access = JsonProperty.Access.WRITE_ONLY)  // ✅ Solo escritura
+    public String getPasswordHashed() {
+        return passwordHashed;
+    }
+
+    public void setPasswordHashed(String passwordHashed) {
+        this.passwordHashed = passwordHashed;
+    }
+
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)  // ✅ Solo lectura
+    public String getRol() {
+        return rol;
+    }
+
+    public void setRol(String rol) {
+        this.rol = rol;
+    }
 }

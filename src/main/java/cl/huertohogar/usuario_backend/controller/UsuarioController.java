@@ -13,6 +13,7 @@ import cl.huertohogar.usuario_backend.dto.AuthenticationResponse;
 import cl.huertohogar.usuario_backend.dto.PasswordUpdateRequest;
 import cl.huertohogar.usuario_backend.dto.PasswordResetRequest;
 import cl.huertohogar.usuario_backend.dto.PasswordValidationRequest;
+import cl.huertohogar.usuario_backend.dto.UsuarioResponse;
 import cl.huertohogar.usuario_backend.exception.AuthenticationFailedException;
 import cl.huertohogar.usuario_backend.exception.UsuarioNotFoundException;
 import cl.huertohogar.usuario_backend.model.Usuario;
@@ -58,7 +59,7 @@ public class UsuarioController {
             description = "Usuario creado exitosamente",
             content = @Content(
                 mediaType = "application/json",
-                schema = @Schema(implementation = Usuario.class)
+                schema = @Schema(implementation = UsuarioResponse.class)
             )
         ),
         @ApiResponse(
@@ -66,13 +67,21 @@ public class UsuarioController {
             description = "Datos ingresados NO válidos",
             content = @Content(
                 mediaType = "application/json",
-                examples = @ExampleObject(value = "{\"timestamp\":\"2025-11-01T10:30:00\",\"message\":\"El primer nombre del usuario es obligatorio\",\"status\":400}")
+                examples = @ExampleObject(value = "{\"timestamp\":\"2025-11-14T10:30:00\",\"message\":\"El nombre del usuario es obligatorio\",\"status\":400}")
+            )
+        ),
+        @ApiResponse(
+            responseCode = "409",
+            description = "El email ya está registrado en el sistema",
+            content = @Content(
+                mediaType = "application/json",
+                examples = @ExampleObject(value = "{\"timestamp\":\"2025-11-14T10:30:00\",\"message\":\"El email 'luisgonzalez@gmail.com' ya está registrado en el sistema\",\"status\":409}")
             )
         )
     })
 
     @PostMapping("")
-    public ResponseEntity<Usuario> createUsuario(
+    public ResponseEntity<UsuarioResponse> createUsuario(
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
                 description = "Ingrese datos del usuario a crear",
                 required = true,
@@ -80,13 +89,30 @@ public class UsuarioController {
                     schema = @Schema(implementation = Usuario.class),
                     examples = @ExampleObject(
                         name = "Ejemplo de usuario",
-                        value = "{\"pNombre\":\"Luis\",\"sNombre\":\"Andrés\",\"aPaterno\":\"González\",\"aMaterno\":\"Ramírez\",\"email\":\"luisgonzalez@gmail.com\",\"telefono\":\"+56987654321\",\"direccion\":\"Calle Prueba 123\",\"passwordHashed\":\"MiPassword123!\"}"
+                        value = "{\"nombre\":\"Felipe\",\"sNombre\":\"Andrés\",\"aPaterno\":\"Villarroel\",\"aMaterno\":\"González\",\"rut\":\"12345678\",\"dv\":\"9\",\"fechaNacimiento\":\"1990-05-15\",\"idRegion\":13,\"direccion\":\"Av. Libertador 123, Santiago\",\"email\":\"felipe.villarroel@gmail.com\",\"telefono\":\"+56987654321\",\"passwordHashed\":\"MiPassword123!\"}"
                     )
                 )
             )
             @org.springframework.web.bind.annotation.RequestBody Usuario usuario) { 
         Usuario nuevoUsuario = usuarioService.save(usuario);
-        return ResponseEntity.status(HttpStatus.CREATED).body(nuevoUsuario);
+        
+        // Convertir a DTO de respuesta (sin rol ni password)
+        UsuarioResponse response = new UsuarioResponse(
+            nuevoUsuario.getIdUsuario(),
+            nuevoUsuario.getNombre(),
+            nuevoUsuario.getSNombre(),
+            nuevoUsuario.getAPaterno(),
+            nuevoUsuario.getAMaterno(),
+            nuevoUsuario.getRut(),
+            nuevoUsuario.getDv(),
+            nuevoUsuario.getFechaNacimiento(),
+            nuevoUsuario.getIdRegion(),
+            nuevoUsuario.getDireccion(),
+            nuevoUsuario.getEmail(),
+            nuevoUsuario.getTelefono()
+        );
+        
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @Operation(
@@ -172,7 +198,7 @@ public class UsuarioController {
                 content = @Content(
                     schema = @Schema(implementation = Usuario.class),
                     examples = @ExampleObject(
-                        value = "{\"pNombre\":\"Luis\",\"sNombre\":\"Andrés\",\"aPaterno\":\"González\",\"aMaterno\":\"Ramírez\",\"email\":\"luisgonzalez@gmail.com\",\"telefono\":\"+56987654321\",\"direccion\":\"Av. Libertador 456\",\"passwordHashed\":\"NuevaPassword123!\"}"
+                        value = "{\"nombre\":\"Felipe\",\"sNombre\":\"Andrés\",\"aPaterno\":\"Villarroel\",\"aMaterno\":\"González\",\"rut\":\"12345678\",\"dv\":\"9\",\"fechaNacimiento\":\"1990-05-15\",\"idRegion\":13,\"direccion\":\"Av. Libertador 456\",\"email\":\"felipe.villarroel@gmail.com\",\"telefono\":\"+56987654321\",\"passwordHashed\":\"NuevaPassword123!\"}"
                     )
                 )
             )
@@ -199,8 +225,8 @@ public class UsuarioController {
                 description = "Campos a actualizar (solo los que se envíen serán modificados)",
                 content = @Content(
                     examples = @ExampleObject(
-                        name = "Actualizar email",
-                        value = "{\"email\":\"luisitocomunica@gmail.com\"}"
+                        name = "Actualizar email y teléfono",
+                        value = "{\"email\":\"felipe.nuevo@gmail.com\",\"telefono\":\"+56912345678\"}"
                     )
                 )
             )
@@ -275,7 +301,7 @@ public class UsuarioController {
                 token,
                 usuario.getIdUsuario(),
                 usuario.getEmail(),
-                usuario.getPNombre(),
+                usuario.getNombre(),
                 usuario.getAPaterno(),
                 usuario.getRol()
             );

@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import cl.huertohogar.usuario_backend.exception.AuthenticationFailedException;
 import cl.huertohogar.usuario_backend.exception.CiudadNotFoundException;
 import cl.huertohogar.usuario_backend.exception.CiudadNotValidException;
+import cl.huertohogar.usuario_backend.exception.EmailAlreadyExistsException;
 import cl.huertohogar.usuario_backend.exception.RegionNotFoundException;
 import cl.huertohogar.usuario_backend.exception.RegionNotValidException;
 import cl.huertohogar.usuario_backend.exception.UsuarioNotFoundException;
@@ -77,6 +78,13 @@ public class GlobalExceptionHandler {
         return ResponseEntity
             .status(HttpStatus.UNAUTHORIZED)
             .body(buildErrorResponse(ex.getMessage(), HttpStatus.UNAUTHORIZED));
+    }
+
+    @ExceptionHandler(EmailAlreadyExistsException.class)
+    public ResponseEntity<Map<String, Object>> handleEmailAlreadyExists(EmailAlreadyExistsException ex) {
+        return ResponseEntity
+            .status(HttpStatus.CONFLICT)
+            .body(buildErrorResponse(ex.getMessage(), HttpStatus.CONFLICT));
     }
 
     @ExceptionHandler(Exception.class)

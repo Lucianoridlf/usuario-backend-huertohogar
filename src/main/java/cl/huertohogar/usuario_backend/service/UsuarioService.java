@@ -8,6 +8,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import cl.huertohogar.usuario_backend.exception.AuthenticationFailedException;
+import cl.huertohogar.usuario_backend.exception.EmailAlreadyExistsException;
 import cl.huertohogar.usuario_backend.exception.UsuarioNotFoundException;
 import cl.huertohogar.usuario_backend.exception.UsuarioNotValidException;
 import cl.huertohogar.usuario_backend.model.Usuario;
@@ -32,44 +33,76 @@ public class UsuarioService {
 
  // CREATE - Crear un nuevo usuario
     public Usuario save(Usuario usuario) {
-        if (usuario == null) {
-            throw new UsuarioNotValidException("El usuario no puede ser nulo");
-        }
-        if (usuario.getPNombre() == null || usuario.getPNombre().trim().isEmpty()) {
-            throw new UsuarioNotValidException("El primer nombre del usuario es obligatorio");
-        }
-        if (usuario.getSNombre() == null || usuario.getSNombre().trim().isEmpty()) {
-            throw new UsuarioNotValidException("El segundo nombre del usuario es obligatorio");
-        }
-        if (usuario.getAPaterno() == null || usuario.getAPaterno().trim().isEmpty()) {
-            throw new UsuarioNotValidException("El apellido paterno del usuario es obligatorio");
-        }
-        if (usuario.getAMaterno() == null || usuario.getAMaterno().trim().isEmpty()) {
-            throw new UsuarioNotValidException("El apellido materno del usuario es obligatorio");
-        }
-        if (usuario.getEmail() == null || usuario.getEmail().trim().isEmpty()) {
-            throw new UsuarioNotValidException("El email del usuario es obligatorio");
-        }
-        if (usuario.getPasswordHashed() == null || usuario.getPasswordHashed().trim().isEmpty()) {
-            throw new UsuarioNotValidException("La contraseña del usuario es obligatoria");
-        }
-
-        
-        // ✅ SEGURIDAD: Forzar rol USER siempre en creación
-        usuario.setRol("USER");
-        
-        // Validar formato de contraseña segura
-        if (!isValidPassword(usuario.getPasswordHashed())) {
-            throw new UsuarioNotValidException(
-                "La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial (@$!%*?&)"
-            );
-        }
-        
-        // Hashear la contraseña antes de guardarla
-        String hashedPassword = passwordEncoder.encode(usuario.getPasswordHashed());
-        usuario.setPasswordHashed(hashedPassword);
-        
-        return usuarioRepository.save(usuario);
+    
+    // DEBUG: Ver qué llega
+    System.out.println("=== DEBUG USUARIO ===");
+    System.out.println("Usuario: " + usuario);
+    System.out.println("Nombre: " + usuario.getNombre());
+    System.out.println("APaterno: " + usuario.getAPaterno());
+    System.out.println("AMaterno: " + usuario.getAMaterno());
+    System.out.println("===================");
+    
+    // Validar campos obligatorios
+    if (usuario.getNombre() == null || usuario.getNombre().trim().isEmpty()) {
+        throw new UsuarioNotValidException("El nombre del usuario es obligatorio");
+    }
+    
+    if (usuario.getAPaterno() == null || usuario.getAPaterno().trim().isEmpty()) {
+        throw new UsuarioNotValidException("El apellido paterno del usuario es obligatorio");
+    }
+    
+    if (usuario.getAMaterno() == null || usuario.getAMaterno().trim().isEmpty()) {
+        throw new UsuarioNotValidException("El apellido materno del usuario es obligatorio");
+    }
+    
+    if (usuario.getRut() == null || usuario.getRut().trim().isEmpty()) {
+        throw new UsuarioNotValidException("El RUT del usuario es obligatorio");
+    }
+    
+    if (usuario.getDv() == null || usuario.getDv().trim().isEmpty()) {
+        throw new UsuarioNotValidException("El dígito verificador del RUT es obligatorio");
+    }
+    
+    if (usuario.getFechaNacimiento() == null) {
+        throw new UsuarioNotValidException("La fecha de nacimiento del usuario es obligatoria");
+    }
+    
+    if (usuario.getIdRegion() == null) {
+        throw new UsuarioNotValidException("La región del usuario es obligatoria");
+    }
+    
+    if (usuario.getDireccion() == null || usuario.getDireccion().trim().isEmpty()) {
+        throw new UsuarioNotValidException("La dirección del usuario es obligatoria");
+    }
+    
+    if (usuario.getEmail() == null || usuario.getEmail().trim().isEmpty()) {
+        throw new UsuarioNotValidException("El correo electrónico del usuario es obligatorio");
+    }
+    
+    if (usuario.getPasswordHashed() == null || usuario.getPasswordHashed().trim().isEmpty()) {
+        throw new UsuarioNotValidException("La contraseña del usuario es obligatoria");
+    }
+    
+    // ✅ VALIDAR que el email no esté en uso
+    if (usuarioRepository.existsByEmail(usuario.getEmail())) {
+        throw new EmailAlreadyExistsException("El email '" + usuario.getEmail() + "' ya está registrado en el sistema");
+    }
+    
+    // ✅ SEGURIDAD: Forzar rol USER siempre en creación
+    usuario.setRol("USER");
+    
+    // Validar formato de contraseña segura
+    if (!isValidPassword(usuario.getPasswordHashed())) {
+        throw new UsuarioNotValidException(
+            "La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial (@$!%*?&)"
+        );
+    }
+    
+    // Hashear la contraseña antes de guardarla
+    String hashedPassword = passwordEncoder.encode(usuario.getPasswordHashed());
+    usuario.setPasswordHashed(hashedPassword);
+    
+    return usuarioRepository.save(usuario);
     }
 
     // READ 
@@ -92,11 +125,8 @@ public class UsuarioService {
         Usuario usuarioExistente = findById(id);
         
         // Validaciones
-        if (usuarioActualizado.getPNombre() == null || usuarioActualizado.getPNombre().trim().isEmpty()) {
-            throw new UsuarioNotValidException("El primer nombre del usuario es obligatorio");
-        }
-        if (usuarioActualizado.getSNombre() == null || usuarioActualizado.getSNombre().trim().isEmpty()) {
-            throw new UsuarioNotValidException("El segundo nombre del usuario es obligatorio");
+        if (usuarioActualizado.getNombre() == null || usuarioActualizado.getNombre().trim().isEmpty()) {
+            throw new UsuarioNotValidException("El nombre del usuario es obligatorio");
         }
         if (usuarioActualizado.getAPaterno() == null || usuarioActualizado.getAPaterno().trim().isEmpty()) {
             throw new UsuarioNotValidException("El apellido paterno del usuario es obligatorio");
@@ -104,16 +134,40 @@ public class UsuarioService {
         if (usuarioActualizado.getAMaterno() == null || usuarioActualizado.getAMaterno().trim().isEmpty()) {
             throw new UsuarioNotValidException("El apellido materno del usuario es obligatorio");
         }
+        if (usuarioActualizado.getRut() == null || usuarioActualizado.getRut().trim().isEmpty()) {
+            throw new UsuarioNotValidException("El RUT del usuario es obligatorio");
+        }
+        if (usuarioActualizado.getDv() == null || usuarioActualizado.getDv().trim().isEmpty()) {
+            throw new UsuarioNotValidException("El dígito verificador del usuario es obligatorio");
+        }
+        if (usuarioActualizado.getFechaNacimiento() == null) {
+            throw new UsuarioNotValidException("La fecha de nacimiento del usuario es obligatoria");
+        }
+        if (usuarioActualizado.getIdRegion() == null) {
+            throw new UsuarioNotValidException("La región del usuario es obligatoria");
+        }
+        if (usuarioActualizado.getDireccion() == null || usuarioActualizado.getDireccion().trim().isEmpty()) {
+            throw new UsuarioNotValidException("La dirección del usuario es obligatoria");
+        }
+        if (usuarioActualizado.getEmail() == null || usuarioActualizado.getEmail().trim().isEmpty()) {
+            throw new UsuarioNotValidException("El email del usuario es obligatorio");
+        }
         if (usuarioActualizado.getPasswordHashed() == null || usuarioActualizado.getPasswordHashed().trim().isEmpty()) {
             throw new UsuarioNotValidException("La contraseña del usuario es obligatoria");
         }
         
         // Actualizar campos
-        usuarioExistente.setPNombre(usuarioActualizado.getPNombre());
+        usuarioExistente.setNombre(usuarioActualizado.getNombre());
         usuarioExistente.setSNombre(usuarioActualizado.getSNombre());
         usuarioExistente.setAPaterno(usuarioActualizado.getAPaterno());
         usuarioExistente.setAMaterno(usuarioActualizado.getAMaterno());
+        usuarioExistente.setRut(usuarioActualizado.getRut());
+        usuarioExistente.setDv(usuarioActualizado.getDv());
+        usuarioExistente.setFechaNacimiento(usuarioActualizado.getFechaNacimiento());
+        usuarioExistente.setIdRegion(usuarioActualizado.getIdRegion());
+        usuarioExistente.setDireccion(usuarioActualizado.getDireccion());
         usuarioExistente.setEmail(usuarioActualizado.getEmail());
+        usuarioExistente.setTelefono(usuarioActualizado.getTelefono());
         usuarioExistente.setPasswordHashed(usuarioActualizado.getPasswordHashed());
 
         return usuarioRepository.save(usuarioExistente);
@@ -130,8 +184,8 @@ public class UsuarioService {
             }
             usuarioExistente.setIdUsuario(usuarioActualizado.getIdUsuario());
         }
-        if (usuarioActualizado.getPNombre() != null) {
-            usuarioExistente.setPNombre(usuarioActualizado.getPNombre());
+        if (usuarioActualizado.getNombre() != null) {
+            usuarioExistente.setNombre(usuarioActualizado.getNombre());
         }
 
         if (usuarioActualizado.getSNombre() != null) {
@@ -146,8 +200,32 @@ public class UsuarioService {
             usuarioExistente.setAMaterno(usuarioActualizado.getAMaterno());
         }
 
+        if (usuarioActualizado.getRut() != null) {
+            usuarioExistente.setRut(usuarioActualizado.getRut());
+        }
+
+        if (usuarioActualizado.getDv() != null) {
+            usuarioExistente.setDv(usuarioActualizado.getDv());
+        }
+
+        if (usuarioActualizado.getFechaNacimiento() != null) {
+            usuarioExistente.setFechaNacimiento(usuarioActualizado.getFechaNacimiento());
+        }
+
+        if (usuarioActualizado.getIdRegion() != null) {
+            usuarioExistente.setIdRegion(usuarioActualizado.getIdRegion());
+        }
+
+        if (usuarioActualizado.getDireccion() != null) {
+            usuarioExistente.setDireccion(usuarioActualizado.getDireccion());
+        }
+
         if (usuarioActualizado.getEmail() != null) {
             usuarioExistente.setEmail(usuarioActualizado.getEmail());
+        }
+
+        if (usuarioActualizado.getTelefono() != null) {
+            usuarioExistente.setTelefono(usuarioActualizado.getTelefono());
         }
 
         if (usuarioActualizado.getPasswordHashed() != null) {
