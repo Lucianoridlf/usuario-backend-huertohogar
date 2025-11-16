@@ -25,6 +25,7 @@ public class WebConfig implements WebMvcConfigurer {
     public void addCorsMappings(@NonNull CorsRegistry registry) {
         registry.addMapping("/**")
                 .allowedOrigins(
+                    "http://localhost:5173",
                     "https://huertohogar.nyc3.cdn.digitaloceanspaces.com",
                     "http://huertohogar-frontend.s3-website-us-east-1.amazonaws.com"
                 )
