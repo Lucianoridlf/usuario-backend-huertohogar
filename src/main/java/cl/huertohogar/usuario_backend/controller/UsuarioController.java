@@ -164,12 +164,40 @@ public class UsuarioController {
             )
         )
     })
-    @RequireRole({"ADMIN"})
+    @RequireRole({"USER", "ADMIN"})
     @GetMapping("/{id}")
     public ResponseEntity<Usuario> getUsuarioById(
             @Parameter(description = "ID del usuario a buscar", example = "1")
-            @PathVariable Integer id) {
-        return ResponseEntity.ok(usuarioService.findById(id));
+            @PathVariable Integer id,
+            @org.springframework.web.bind.annotation.RequestHeader(value = "Authorization", required = false) String authHeader) {
+        
+        // Extraer el ID del usuario desde el token JWT
+        Integer tokenUsuarioId = null;
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String token = authHeader.substring(7);
+            tokenUsuarioId = jwtUtil.extractUsuarioId(token);
+        }
+        
+        // Validar que el usuario pueda acceder a su propia información
+        // O que sea ADMIN (el interceptor ya validó el rol)
+        if (tokenUsuarioId != null && tokenUsuarioId.equals(id)) {
+            // El usuario está accediendo a su propia información
+            return ResponseEntity.ok(usuarioService.findById(id));
+        }
+        
+        // Si no coincide el ID, verificar que sea ADMIN
+        String rol = null;
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String token = authHeader.substring(7);
+            rol = jwtUtil.extractRol(token);
+        }
+        
+        if ("ADMIN".equals(rol)) {
+            return ResponseEntity.ok(usuarioService.findById(id));
+        }
+        
+        // Si no es su propia info ni es ADMIN, denegar acceso
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
     }
 
     @Operation(
